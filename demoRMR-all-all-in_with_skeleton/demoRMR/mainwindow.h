@@ -34,7 +34,9 @@ enum customGestures
     LEFT_LIKE = 1,
     LEFT_DISLIKE = 2,
     RIGHT_LIKE = 3,
-    RIGHT_DISLIKE = 4
+    RIGHT_DISLIKE = 4,
+    TELEPHONE_LEFT = 5,
+    TELEPHONE_RIGHT = 6
 };
 
 enum settingSpeedOption
@@ -79,17 +81,6 @@ int processThisSkeleton(skeleton skeledata);
 private slots:
     void on_pushButton_9_clicked();
 
-    void on_pushButton_2_clicked();
-
-    void on_pushButton_3_clicked();
-
-    void on_pushButton_6_clicked();
-
-    void on_pushButton_5_clicked();
-
-    void on_pushButton_4_clicked();
-
-    void on_pushButton_clicked();
     void getNewFrame();
 
     void on_pushButton_8_clicked();
@@ -153,11 +144,6 @@ private:
      void speedSetting(double speed, settingSpeedOption option, speedType type);
      bool speedCheck(double speed, speedType type);
      void getRatio(int frameWidth, int frameHeight);
-
-public slots:
-     void setUiValues(double robotX,double robotY,double robotFi);
-signals:
-     void uiValuesChanged(double newrobotX,double newrobotY,double newrobotFi); ///toto nema telo
 
 
 };

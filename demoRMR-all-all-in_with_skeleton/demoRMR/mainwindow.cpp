@@ -72,12 +72,6 @@ void MainWindow::paintEvent(QPaintEvent *event)
 
 /// toto je slot. niekde v kode existuje signal, ktory je prepojeny. pouziva sa napriklad (v tomto pripade) ak chcete dostat data z jedneho vlakna (robot) do ineho (ui)
 /// prepojenie signal slot je vo funkcii  on_pushButton_9_clicked
-void  MainWindow::setUiValues(double robotX,double robotY,double robotFi)
-{
-     ui->lineEdit_2->setText(QString::number(robotX));
-     ui->lineEdit_3->setText(QString::number(robotY));
-     ui->lineEdit_4->setText(QString::number(robotFi));
-}
 
 ///toto je calback na data z robota, ktory ste podhodili robotu vo funkcii on_pushButton_9_clicked
 /// vola sa vzdy ked dojdu nove data z robota. nemusite nic riesit, proste sa to stane
@@ -111,7 +105,6 @@ int MainWindow::processThisRobot(TKobukiData robotdata)
                 /// okno pocuva vo svojom slote a vasu premennu nastavi tak ako chcete. prikaz emit to presne takto spravi
                 /// viac o signal slotoch tu: https://doc.qt.io/qt-5/signalsandslots.html
         ///posielame sem nezmysli.. pohrajte sa nech sem idu zmysluplne veci
-        emit uiValuesChanged(robotdata.EncoderLeft,11,12);
         ///toto neodporucam na nejake komplikovane struktury.signal slot robi kopiu dat. radsej vtedy posielajte
         /// prazdny signal a slot bude vykreslovat strukturu (vtedy ju musite mat samozrejme ako member premmennu v mainwindow.ak u niekoho najdem globalnu premennu,tak bude cistit bludisko zubnou kefkou.. kefku dodam)
         /// vtedy ale odporucam pouzit mutex, aby sa vam nestalo ze budete pocas vypisovania prepisovat niekde inde
@@ -167,15 +160,24 @@ int MainWindow::processThisSkeleton(skeleton skeledata)
         break;
     case LEFT_DISLIKE:
         speedSetting(0, SET, TRANSLATED);
+        rotationspeed = 0;
         cout << "New speed is: " << forwardspeed << endl;
         break;
     case RIGHT_LIKE:
-        speedSetting(5, ADD_TO_EXISTED, TRANSLATED);
+        speedSetting(7, ADD_TO_EXISTED, TRANSLATED);
         cout << "New speed is: " << forwardspeed << endl;
         break;
     case RIGHT_DISLIKE:
-        speedSetting(-5, ADD_TO_EXISTED, TRANSLATED);
+        speedSetting(-7, ADD_TO_EXISTED, TRANSLATED);
         cout << "New speed is: " << forwardspeed << endl;
+        break;
+    case TELEPHONE_LEFT:
+        speedSetting(-0.03, ADD_TO_EXISTED, ANGULAR);
+        cout << "New speed is: " << rotationspeed << endl;
+        break;
+    case TELEPHONE_RIGHT:
+        speedSetting(0.03, ADD_TO_EXISTED, ANGULAR);
+        cout << "New speed is: " << rotationspeed << endl;
         break;
     default:
         break;
@@ -190,7 +192,6 @@ void MainWindow::on_pushButton_9_clicked() //start button
     rotationspeed=0;
 
     //tu sa nastartuju vlakna ktore citaju data z lidaru a robota
-    connect(this,SIGNAL(uiValuesChanged(double,double,double)),this,SLOT(setUiValues(double,double,double)));
 
     ///setovanie veci na komunikaciu s robotom/lidarom/kamerou.. su tam adresa porty a callback.. laser ma ze sa da dat callback aj ako lambda.
     /// lambdy su super, setria miesto a ak su rozumnej dlzky,tak aj prehladnost... ak ste o nich nic nepoculi poradte sa s vasim doktorom alebo lekarnikom...
@@ -220,55 +221,8 @@ void MainWindow::on_pushButton_9_clicked() //start button
     ui->pushButton_9->hide();
 }
 
-void MainWindow::on_pushButton_2_clicked() //forward
-{
-    //pohyb dopredu
-    robot.setTranslationSpeed(500);
-
-}
-
-void MainWindow::on_pushButton_3_clicked() //back
-{
-    robot.setTranslationSpeed(-250);
-
-}
-
-void MainWindow::on_pushButton_6_clicked() //left
-{
-robot.setRotationSpeed(3.14159/2);
-
-}
-
-void MainWindow::on_pushButton_5_clicked()//right
-{
-robot.setRotationSpeed(-3.14159/2);
-
-}
-
-void MainWindow::on_pushButton_4_clicked() //stop
-{
-    robot.setTranslationSpeed(0);
-
-}
 
 
-
-
-void MainWindow::on_pushButton_clicked()
-{
-    if(useCamera1==true)
-    {
-        useCamera1=false;
-
-        ui->pushButton->setText("use camera");
-    }
-    else
-    {
-        useCamera1=true;
-
-        ui->pushButton->setText("use laser");
-    }
-}
 
 void MainWindow::getNewFrame()
 {
@@ -402,6 +356,14 @@ void MainWindow::drawWarningWidged(QPainter* painter, QRect rect, QPen pero){
        }
     }
 
+    pero.setWidth(2);
+    pero.setBrush(Qt::white);
+    pero.setColor(Qt::black);
+    painter->setPen(pero);
+    painter->setBrush(Qt::white);
+    painter->drawEllipse(rect.topLeft().x()+radius/4, rect.topLeft().y()+radius/4, radius/2, radius/2);
+    painter->drawLine(rect.topLeft().x() + radius/2,rect.topLeft().y() + screenMiddleY - radius/4, rect.topLeft().x() + radius/2, rect.topLeft().y() + screenMiddleY);
+
 }
 
 
@@ -469,6 +431,22 @@ customGestures MainWindow::detectGesture() {
                     return RIGHT_LIKE;
                 }
             }
+        }
+    }
+
+//    cout << endl << endl << threshold << endl << abs(skeleJoints.joints[left_wrist].x - skeleJoints.joints[left_pink_tip].x) << abs(skeleJoints.joints[left_middle_tip].x - skeleJoints.joints[left_wrist].x);
+
+    if(abs(skeleJoints.joints[left_wrist].x - skeleJoints.joints[left_pink_tip].x) > threshold*1.5){
+        if(abs(skeleJoints.joints[left_middle_tip].x - skeleJoints.joints[left_wrist].x) < threshold*1.5){
+            cout << "Gesture: TELEPHONE_LEFT" << endl;
+            return TELEPHONE_LEFT;
+        }
+    }
+
+    if(abs(skeleJoints.joints[right_wrist].x - skeleJoints.joints[right_pink_tip].x) > threshold*1.5){
+        if(abs(skeleJoints.joints[right_middle_tip].x - skeleJoints.joints[right_wrist].x) < threshold*1.5){
+            cout << "Gesture: TELEPHONE_RIGHT" << endl;
+            return TELEPHONE_RIGHT;
         }
     }
 
@@ -547,6 +525,7 @@ void MainWindow::on_pushButton_8_clicked()
 
 void MainWindow::on_pushButton_7_clicked()
 {
-    robot.setTranslationSpeed(0);
+    speedSetting(0, SET, TRANSLATED);
+    rotationspeed = 0;
 }
 
