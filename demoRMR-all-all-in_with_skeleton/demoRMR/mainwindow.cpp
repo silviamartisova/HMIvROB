@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "qlabel.h"
 #include "ui_mainwindow.h"
 #include <QPainter>
 #include <math.h>
@@ -35,7 +36,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::paintEvent(QPaintEvent *event)
 {
-    QPainter painter(this);
+    QPainter painter(this);    
     /// prekreslujem obrazovku len vtedy, ked viem ze mam nove data. paintevent sa
     /// moze pochopitelne zavolat aj z inych dovodov, napriklad zmena velkosti okna
     painter.setBrush(Qt::black);//cierna farba pozadia(pouziva sa ako fill pre napriklad funkciu drawRect)
@@ -45,6 +46,32 @@ void MainWindow::paintEvent(QPaintEvent *event)
     pero.setColor(Qt::green);//farba je zelena
     QRect mainRect, secondaryRect, thirdRect;
     mainRect = ui->frame->geometry();//ziskate porametre stvorca,do ktoreho chcete kreslit
+
+//    //set ratio of main frame
+//    int width = mainRect.size().width(); // get current width
+//    int height = mainRect.size().height(); // get current height
+//    if (!(width * 16 == height * 9))
+//     // check if aspect ratio is 4:3
+//    {
+////        int newHeight = width * 16 / 9; // calculate new height for 4:3 ratio
+//        int newWidth = height * 16 / 9; // calculate new height for 4:3 ratio
+
+//        mainRect.setWidth(newWidth);
+////        mainRect.setHeight(newHeight); // set new size
+//    }
+
+
+    //set ratio of main frame
+    int width = size().width();
+    int height = size().height();
+    if (!(width * 16 == height * 9))
+    {
+        int newWidth = height * 16 / 9;
+        resize(newWidth, height);
+    }
+
+
+
     secondaryRect = ui->frame_2->geometry();
     thirdRect = ui->frame_3->geometry();
     mainRect.translate(0,15);
@@ -65,8 +92,10 @@ void MainWindow::paintEvent(QPaintEvent *event)
     QColor fillColor(255, 255, 255, 128);
     QBrush brush(fillColor);
     painter.fillRect(secondaryRect, brush);
+
     drawMinimap(&painter, frameState ? secondaryRect : mainRect, pero);
     drawWarningWidged(&painter, thirdRect, pero);
+    drawWarningText(&painter, frameState ? mainRect : secondaryRect);
 }
 
 
@@ -155,6 +184,7 @@ int MainWindow::processThisSkeleton(skeleton skeledata)
 
     switch (detectGesture()){
     case LEFT_LIKE:
+        break;
         speedSetting(maxForwardspeed, SET, TRANSLATED);
         cout << "New speed is: " << forwardspeed << endl;
         break;
@@ -286,6 +316,25 @@ void MainWindow::drawCamera(QPainter* painter, QRect rect){
     }
 }
 
+void MainWindow::drawWarningText(QPainter* painter, QRect rect){
+
+    for(int k=0;k<copyOfLaserData.numberOfScans/*360*/;k++)
+    {
+//        cout << copyOfLaserData.Data[k].scanDistance << endl;
+        if(copyOfLaserData.Data[k].scanDistance < 300 && copyOfLaserData.Data[k].scanDistance > 130){
+
+            QFont font("Benshrift", rect.width()/10);
+            painter->setFont(font);
+             // vytvorenie QPainter objektu a nastavenie farby a priehľadnosti
+            QColor color(255, 0, 0, 100); // nastavenie farby na červenú s priehľadnosťou 50%
+            painter->setPen(color);
+            painter->drawText(rect, Qt::AlignCenter, "Warning!");
+            return;
+        }
+
+    }
+}
+
 void MainWindow::drawLidar(QPainter* painter, QRect rect, QPen pero){
 
     getRatio(rect.width(), rect.height());
@@ -334,7 +383,8 @@ void MainWindow::drawMinimap(QPainter* painter, QRect rect, QPen pero){
             painter->drawEllipse(QPoint(xp, yp),1,1);
         }
     }
-    pero.setColor(Qt::blue);
+    pero.setColor(Qt::magenta);
+    painter->setBrush(Qt::magenta);
     painter->setPen(pero);
     painter->drawEllipse(QPoint(rect.x() + rect.width()/2, rect.y() + rect.height()/2),5,5);
 }
@@ -380,7 +430,42 @@ customGestures MainWindow::detectGesture() {
         threshold = std::sqrt(dx*dx + dy*dy);
     }
     threshold *= 1.25;
-//    cout << "threshold: " << threshold << endl;
+
+
+    float threshold2;
+    if(skeleJoints.joints[left_wrist].x != 0){
+        float dx = skeleJoints.joints[left_wrist].x - skeleJoints.joints[left_index_mcp].x;
+        float dy = skeleJoints.joints[left_wrist].y - skeleJoints.joints[left_index_mcp].y;
+        threshold2 = std::sqrt(dx*dx + dy*dy);
+    }else {
+        float dx = skeleJoints.joints[right_wrist].x - skeleJoints.joints[right_index_mcp].x;
+        float dy = skeleJoints.joints[right_wrist].y - skeleJoints.joints[right_index_mcp].y;
+        threshold2 = std::sqrt(dx*dx + dy*dy);
+    }
+//    cout << "threshold2: " << threshold2 << endl;
+    threshold2 /= 2;
+
+
+    if(abs(skeleJoints.joints[right_thumb_tip].y - skeleJoints.joints[right_wrist].y) > threshold2){
+        if(abs(skeleJoints.joints[right_index_tip].y - skeleJoints.joints[right_wrist].y) > threshold2){
+            if(abs(skeleJoints.joints[right_middle_tip].y - skeleJoints.joints[right_wrist].y) > threshold2){
+                if(abs(skeleJoints.joints[right_ringy_tip].y - skeleJoints.joints[right_wrist].y) > threshold2){
+                    if(abs(skeleJoints.joints[right_pink_tip].y - skeleJoints.joints[right_wrist].y) > threshold2){
+                        startDetected = true;
+                        ui->lblStatus->setText("Detecting gestures");
+                    }}}}
+    }
+
+    if(abs(skeleJoints.joints[left_thumb_tip].y - skeleJoints.joints[left_wrist].y) > threshold2)
+        if(abs(skeleJoints.joints[left_index_tip].y - skeleJoints.joints[left_wrist].y) > threshold2)
+            if(abs(skeleJoints.joints[left_middle_tip].y - skeleJoints.joints[left_wrist].y) > threshold2)
+                if(abs(skeleJoints.joints[left_ringy_tip].y - skeleJoints.joints[left_wrist].y) > threshold2)
+                    if(abs(skeleJoints.joints[left_pink_tip].y - skeleJoints.joints[left_wrist].y) > threshold2){
+                        startDetected = false;
+                        ui->lblStatus->setText("Not detecting gestures");
+    }
+
+    if(!startDetected) return LEFT_DISLIKE;
 
     // Minimalny ozdel medzi koncom palca a ukazovaka
     if(abs(skeleJoints.joints[left_thumb_tip].y - skeleJoints.joints[left_index_tip].y) > threshold){

@@ -36,7 +36,9 @@ enum customGestures
     RIGHT_LIKE = 3,
     RIGHT_DISLIKE = 4,
     TELEPHONE_LEFT = 5,
-    TELEPHONE_RIGHT = 6
+    TELEPHONE_RIGHT = 6,
+    START_GESTURE = 7,
+    STOP_GESTURE = 8,
 };
 
 enum settingSpeedOption
@@ -131,12 +133,14 @@ private:
      int minForWidgetWarningColor = 20;
      int angleSpaces = 15;
      int skippingPoints = 10;
+     bool startDetected = false;
 //     QColor getLidarPointColor(float distance);
 
      void drawCamera(QPainter* painter, QRect rect);
      void drawLidar(QPainter* painter, QRect rect, QPen pero);
      void drawMinimap(QPainter* painter, QRect rect, QPen pero);
      void drawWarningWidged(QPainter* painter, QRect rect, QPen pero);
+     void drawWarningText(QPainter* painter, QRect rect);
 
      customGestures detectGesture();
      bool connected = false;
