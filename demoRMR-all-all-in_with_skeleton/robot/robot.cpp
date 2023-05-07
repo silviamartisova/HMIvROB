@@ -18,7 +18,6 @@ std::function<int(LaserMeasurement)> Robot::do_nothing_laser=[](LaserMeasurement
 
 Robot::~Robot()
 {
-
     ready_promise.set_value();
     robotthreadHandle.join();
     laserthreadHandle.join();
